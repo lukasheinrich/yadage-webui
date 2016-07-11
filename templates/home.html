@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Yadage Web Interface</title>
+<!--
+<script src="static/components/jquery/dist/jquery.js" charset="utf-8"></script>
+<script src="static/components/socket.io-client/socket.io.js"></script>
+<script src="static/d3/d3.js"></script>
+
+<style type="text/css"></style> -->
+<link rel="stylesheet" href="static/components/bootstrap/dist/css/bootstrap.min.css"></style>
+<link rel="stylesheet" href="static/components/bootstrap/dist/css/bootstrap-theme.min.css"></style>
+
+<!-- <script type="text/javascript">
+  var socket = io.connect('/');
+  socket.on('world',function(data){
+    console.log('sweet jesus')
+    console.log(data)
+  })
+
+  $(document).ready(function(){
+    socket.emit('hello',{'what':'is up'})
+  })
+
+</script> -->
+
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <h1>Yadage Web Interface</h1>
+
+        <form action="/startworkflow" method="POST">
+          <input class="form-control" name="toplevel" value="/Users/lukas/Code/yadagedev/yadage-workflows/phenochain">
+          <input class="form-control" name="workflow" value="madgraph_delphes.yml">
+          <input class="form-control" name="initdata" value="{&quot;nevents&quot:100}">
+          <button type="submit" class="btn btn-default">Start!</button>
+        </form>
+
+
+      </div>
+
+    </div>
+  </div>
+
+</body>
+
+</html>

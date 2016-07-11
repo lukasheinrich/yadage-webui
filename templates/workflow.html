@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Yadage Web Interface</title>
+
+    <script src="/static/components/jquery/dist/jquery.js" charset="utf-8"></script>
+    <script src="/static/components/socket.io-client/socket.io.js"></script>
+    <script src="/static/d3/d3.js"></script>
+
+    <link rel="stylesheet" href="/static/components/bootstrap/dist/css/bootstrap.min.css"></style>
+    <link rel="stylesheet" href="/static/components/bootstrap/dist/css/bootstrap-theme.min.css"></style>
+
+    <style type="text/css">
+      #workflow_view {
+        border: 1px solid black;
+        height: 500px;
+        width: 800px;
+      }
+    </style>
+
+    <script type="text/javascript">
+      function apply(ruleid){
+        console.log('applying rule '+ruleid)
+        $.ajax('/apply?wflowid={{wflowid}}&ruleid='+ruleid,{success: function(data){
+          console.log('apply response')
+          console.log(data)
+        }})
+      }
+
+      function submit(nodeid){
+        $.ajax('/submit?wflowid={{wflowid}}&nodeid='+nodeid,{success: function(data){
+          console.log('submit response')
+          console.log(data)
+        }})
+      }
+
+      function draw_dag(jsondata){
+        console.log(jsondata)
+      }
+
+      $(document).ready(function(){
+        console.log('ready')
+        // draw_dag(what)
+      })
+
+    </script>
+
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <h1>Yadage Workflow </h1>
+          <h3>id: {{wflowid}}, status: {{ui.status()}}</h3>
+
+
+          <ul>
+          {% for ruleid in ui.applicable_rules() %}
+            <li>rule {{ruleid}}
+              <form action="/apply" method="GET">
+                <input name="wflowid" value="{{wflowid}}" style="display:none">
+                <input name="ruleid" value="{{ruleid}}" style="display:none">
+                <button>apply</button>
+              </form>
+            </li>
+          {% endfor %}
+          </ul>
+
+          <ul>
+          {% for nodeid in ui.submittable_nodes() %}
+            <li>node {{nodeid}}
+              <form action="/submit" method="GET">
+                <input name="wflowid" value="{{wflowid}}" style="display:none">
+                <input name="nodeid" value="{{nodeid}}" style="display:none">
+                <button>apply</button>
+              </form>
+            </li>
+          {% endfor %}
+          </ul>
+
+          <svg id="workflow_view"></svg>
+        </div>
+      </div>
+    </div>
+
+  </body>
+
+</html>
