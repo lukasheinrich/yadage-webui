@@ -7,6 +7,7 @@
     <script src="/static/components/jquery/dist/jquery.js" charset="utf-8"></script>
     <script src="/static/components/socket.io-client/socket.io.js"></script>
     <script src="/static/d3/d3.js"></script>
+    <script src="https://d3js.org/d3-force.v1.min.js"></script>
 
     <link rel="stylesheet" href="/static/components/bootstrap/dist/css/bootstrap.min.css"></style>
     <link rel="stylesheet" href="/static/components/bootstrap/dist/css/bootstrap-theme.min.css"></style>
@@ -16,6 +17,12 @@
         border: 1px solid black;
         height: 500px;
         width: 800px;
+      }
+
+      #arrowhead {
+        stroke-width:5;
+        stroke:#000;
+        stroke-dasharray:5, 5;
       }
     </style>
 
@@ -37,11 +44,118 @@
 
       function draw_dag(jsondata){
         console.log(jsondata)
+
       }
 
+      function draw_dag(nodes,edges){
+        var height = 500;
+        var width = 800;
+
+        scalefactor = 0.18
+        xscale = d3.scaleLinear().domain([-width*scalefactor,width*scalefactor]).range([0, width]);
+        yscale = d3.scaleLinear().domain([-height*scalefactor, height*scalefactor]).range([0, height]);
+
+        var simulation = d3.forceSimulation(nodes)
+            .force("charge",
+              d3.forceManyBody()
+            )
+            .force("center", d3.forceCenter())
+            .force("link", d3.forceLink(edges).distance(10).strength(1))
+            .on('tick',tick)
+        var svg = d3.select('#workflow_view')
+
+
+        statecolor = {
+          SUCCESS: 'green',
+          DEFINED: 'grey',
+          FAILED: 'red',
+          RUNNING: 'yellow'
+        }
+
+
+        svg.append('defs').append('marker')
+          .attr('id','arrow')
+          .attr('refX',13)
+          .attr('refY',4)
+          .attr('markerUnits','strokeWidth')
+          .attr('markerWidth',10)
+          .attr('markerHeight',8)
+          .attr('orient','auto')
+          .append('path')
+          .attr('d','M 0 0 L 10 4 L 0 8 Z')
+          .attr('fill','black')
+
+        var dagNodes = svg.selectAll('circle').data(nodes).enter()
+          .append('circle')
+          .attr('r','5')
+          .attr('fill',function(d){return statecolor[d.state]})
+          .attr('cx',function(d,i){return xscale(d.x);})
+          .attr('cy',function(d,i){return yscale(d.y);})
+
+        var dagEdges = svg.selectAll('line').data(edges).enter()
+          .append('line')
+          .style('stroke', 'black')
+          .attr('marker-end', 'url(#arrow)')
+          .attr('x1', function(d) { return xscale(d.source.x); })
+          .attr('y1', function(d) { return yscale(d.source.y); })
+          .attr('x2', function(d) { return xscale(d.target.x); })
+          .attr('y2', function(d) { return yscale(d.target.y); });
+
+        var dagLabels = svg.selectAll('text').data(nodes)
+          .enter()
+          .append('text')
+            .attr('x',function(d,i){return xscale(d.x);})
+            .attr('y',function(d,i){return yscale(d.y);})
+            .attr('transform', 'translate(-6,20)')
+            .text(function(d) { return d.name});
+
+
+
+
+        function tick(){
+          dagNodes
+            .attr('cx',function(d,i){return xscale(d.x);})
+            .attr('cy',function(d,i){return yscale(d.y);})
+          dagEdges
+            .attr('x1', function(d) { return xscale(d.source.x); })
+            .attr('y1', function(d) { return yscale(d.source.y); })
+            .attr('x2', function(d) { return xscale(d.target.x); })
+            .attr('y2', function(d) { return yscale(d.target.y); });
+          dagLabels
+            .attr('x',function(d,i){return xscale(d.x);})
+            .attr('y',function(d,i){return yscale(d.y);})
+        }
+      }
+
+
+
+      // var nodes = undefined;
       $(document).ready(function(){
+
+
         console.log('ready')
-        // draw_dag(what)
+
+
+        var workflow = {{ui.state.json()|tojson}}
+
+        nodemap = {}
+        workflow.dag.nodes.forEach(function(x,i){nodemap[x.id] = i})
+
+        var dagnodes = workflow.dag.nodes.map(function(x,i){
+          return {
+            index: i,
+            id: x.id,
+            name: x.name,
+            state: x.state
+          }
+        })
+
+        var dagedges = workflow.dag.edges.map(function(x){
+          return {source: nodemap[x[0]], target: nodemap[x[1]]}
+        })
+
+        draw_dag(dagnodes,dagedges);
+
       })
 
     </script>
@@ -53,7 +167,7 @@
       <div class="row">
         <div class="col-md-12">
           <h1>Yadage Workflow </h1>
-          <h3>id: {{wflowid}}, status: {{ui.status()}}</h3>
+          <h3>id: <a href="/index/{{wflowid}}">{{wflowid}}</a>, status: {{ui.status()}}</h3>
 
 
           <ul>
@@ -74,7 +188,7 @@
               <form action="/submit" method="GET">
                 <input name="wflowid" value="{{wflowid}}" style="display:none">
                 <input name="nodeid" value="{{nodeid}}" style="display:none">
-                <button>apply</button>
+                <button>submit</button>
               </form>
             </li>
           {% endfor %}
