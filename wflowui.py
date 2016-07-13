@@ -21,8 +21,11 @@ class wflowui(object):
                 applicable += [rule.identifier]
         return applicable
 
+    def rule(self,ruleid):
+        return [(i,x) for i,x in enumerate(self.state.rules) if x.identifier==ruleid][0]
+
     def apply_rule(self,ruleid):
-        index = [(i,x) for i,x in enumerate(self.state.rules) if x.identifier==ruleid][0][0]
+        index = self.rule(ruleid)[0]
         rule  = self.state.rules.pop(index)
         rule.apply(self.state)
         self.state.applied_rules.append(rule)

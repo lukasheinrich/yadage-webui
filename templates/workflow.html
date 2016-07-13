@@ -172,7 +172,7 @@
 
           <ul>
           {% for ruleid in ui.applicable_rules() %}
-            <li>rule {{ruleid}}
+            <li>rule {{ui.rule(ruleid)[1].offset}}/{{ui.rule(ruleid)[1].rule.name}}
               <form action="/apply" method="GET">
                 <input name="wflowid" value="{{wflowid}}" style="display:none">
                 <input name="ruleid" value="{{ruleid}}" style="display:none">
@@ -184,7 +184,7 @@
 
           <ul>
           {% for nodeid in ui.submittable_nodes() %}
-            <li>node {{nodeid}}
+            <li>node {{ui.state.dag.getNode(nodeid).name}}
               <form action="/submit" method="GET">
                 <input name="wflowid" value="{{wflowid}}" style="display:none">
                 <input name="nodeid" value="{{nodeid}}" style="display:none">
