@@ -32,6 +32,12 @@
     <div class="row">
       <div class="col-md-12">
         <h1>Yadage Web Interface</h1>
+      </div>
+
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <h3>Create New Workflow</h3>
 
         <form action="/startworkflow" method="POST">
           <input class="form-control" name="toplevel" value="from-github/phenochain">
@@ -40,9 +46,18 @@
           <button type="submit" class="btn btn-default">Start!</button>
         </form>
 
-
       </div>
 
+    </div>
+    <div class="row">
+      <h3>Existing Workflows</h3>
+      <div class="col-md-12">
+        <ul>
+        {% for flow in existing_flows %}
+          <li><a href="/workflow/{{flow}}">{{flow}}</a></li>
+        {% endfor %}
+        </ul>
+      </div>
     </div>
   </div>
 

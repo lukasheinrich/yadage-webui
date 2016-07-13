@@ -23,7 +23,7 @@ app.register_blueprint(index, url_prefix='/index')
 
 
 import celery
-
+import os
 import uuid
 import wflowui
 import json
@@ -31,7 +31,8 @@ from wflowui import backend as wflowbackend
 
 @app.route('/')
 def index():
-    return render_template('home.html')
+    existing_flows = os.listdir(workdirpath(''))
+    return render_template('home.html', existing_flows = existing_flows)
 
 @app.route('/startworkflow', methods = ['POST'])
 def startworkflow():
