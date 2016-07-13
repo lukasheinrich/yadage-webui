@@ -9,11 +9,12 @@ services:
       - workdirsvol:/workdirs_docker
     environment:
       - YADAGE_REDIS_HOST=redis
+      - WORKDIRBASE=/workdirs_docker
   worker:
     build: .
     command: celery worker -A yadage.backends.celeryapp -I yadage.backends.packtivity_celery -l debug
     environment:
-      - WORKDIRBASE="$PWD/workdirs_docker"
+      - WORKDIRBASE=/workdirs_docker
       - C_FORCE_ROOT=yes
       - YADAGE_REDIS_HOST=redis
     volumes:

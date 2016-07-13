@@ -70,6 +70,8 @@ def init_workflow(workdir,workflow,toplevel,initdata):
         'readonly': []
     }
 
+    print 'initializing workflow with root context: {}'.format(rootcontext)
+
     workflow = yadage.yadagemodels.YadageWorkflow.createFromJSON(workflow_def,rootcontext)
     workflow.view().init(initdata)
     os.makedirs('{}/_yadage/'.format(workdir))
