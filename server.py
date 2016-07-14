@@ -28,6 +28,7 @@ import uuid
 import wflowui
 import json
 from wflowui import backend as wflowbackend
+import yadage.visualize
 
 @app.route('/')
 def index():
@@ -53,6 +54,13 @@ def getui(wflowid):
         ),
         wflowbackend)
 
+def save_state(ui,wflowid):
+    yadage.visualize.write_prov_graph(
+                    '{}/_yadage'.format(workdirpath(wflowid)),
+                    ui.state, vizformat = 'png'
+    )
+    json.dump(ui.state.json(),statefile(wflowid,'w'))
+
 
 @app.route('/apply')
 def apply_rule():
@@ -60,7 +68,7 @@ def apply_rule():
     ruleid = request.args['ruleid']
     ui = getui(wflowid)
     ui.apply_rule(ruleid)
-    json.dump(ui.state.json(),statefile(wflowid,'w'))
+    save_state(ui,wflowid)
     return redirect(url_for('workflow',wflowid = wflowid))
 
 @app.route('/submit')
@@ -70,7 +78,7 @@ def submit_node():
     nodeid = request.args['nodeid']
     ui = getui(wflowid)
     ui.submit_node(nodeid)
-    json.dump(ui.state.json(),statefile(wflowid,'w'))
+    save_state(ui,wflowid)
     return redirect(url_for('workflow',wflowid = wflowid))
 
 # @app.route('/workflow_json')

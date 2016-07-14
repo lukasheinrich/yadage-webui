@@ -166,6 +166,7 @@
     <div class="container">
       <div class="row">
         <div class="col-md-12">
+          <h5><a href="/">Home</a></h5>
           <h1>Yadage Workflow </h1>
           <h3>id: <a href="/index/{{wflowid}}">{{wflowid}}</a>, status: {{ui.status()}}</h3>
 
@@ -173,10 +174,10 @@
           <ul>
           {% for ruleid in ui.applicable_rules() %}
             <li>rule {{ui.rule(ruleid)[1].offset}}/{{ui.rule(ruleid)[1].rule.name}}
-              <form action="/apply" method="GET">
+              <form action="/apply" method="GET" style="display:inline">
                 <input name="wflowid" value="{{wflowid}}" style="display:none">
                 <input name="ruleid" value="{{ruleid}}" style="display:none">
-                <button>apply</button>
+                <button class="btn btn-default">apply</button>
               </form>
             </li>
           {% endfor %}
@@ -184,17 +185,23 @@
 
           <ul>
           {% for nodeid in ui.submittable_nodes() %}
-            <li>node {{ui.state.dag.getNode(nodeid).name}}
-              <form action="/submit" method="GET">
+            <li>Node {{ui.state.dag.getNode(nodeid).name}}
+              <form action="/submit" method="GET" style="display:inline">
                 <input name="wflowid" value="{{wflowid}}" style="display:none">
                 <input name="nodeid" value="{{nodeid}}" style="display:none">
-                <button>submit</button>
+                <button class="btn btn-default">submit</button>
               </form>
             </li>
           {% endfor %}
           </ul>
-
-          <svg id="workflow_view"></svg>
+        </div>
+        <div class="row">
+          <div class="col-md-10">
+            <svg id="workflow_view"></svg>
+          </div>
+          <div class="col-md-2">
+            <img width="200" src="/index/{{wflowid}}/_yadage/yadage_workflow_instance.png">
+          </div>
         </div>
       </div>
     </div>

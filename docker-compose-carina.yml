@@ -17,7 +17,7 @@ services:
       - WORKDIRBASE=/workdirs_docker
       - C_FORCE_ROOT=yes
       - YADAGE_REDIS_HOST=redis
-      - PACKTIVITY_WORKDIR_LOCATION=/workdirs_docker:/var/lib/docker/volumes/webui_workdirsvol/_data
+      - PACKTIVITY_WORKDIR_LOCATION=/workdirs_docker:/var/lib/docker/volumes/yadagewebui_workdirsvol/_data
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - workdirsvol:/workdirs_docker
