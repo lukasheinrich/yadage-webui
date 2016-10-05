@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A DAG Executor - User Dashboard</title>
+
+<link rel="icon" type="image/png" href="./images/favicon-32x32.png" />
+
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/styles.css" rel="stylesheet">
+<link href="css/adage.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+<script src="js/html5shiv.js"></script>
+<script src="js/respond.min.js"></script>
+<![endif]-->
+
+<!-- D3.js -->
+<!--script src="js/common/d3.v3.min.js" charset="utf-8"></script>
+<script src="js/common/dagre-d3.min.js"></script-->
+
+<!-- VIS.js -->
+<link href="css/vis.css" rel="stylesheet">
+<script src="js/common/vis.js"></script>
+
+<script src="https://use.fontawesome.com/6f90c55abf.js"></script>
+<script src="js/common/jquery.js"></script>
+<script src="js/common/bootstrap.min.js"></script>
+
+<script src="js/yadage/hateoas.js"></script>
+<script src="js/yadage/dag.js"></script>
+<script src="js/yadage/workflow.js"></script>
+<script src="js/yadage/ui/graph.js"></script>
+<script src="js/yadage/ui/headline.js"></script>
+<script src="js/yadage/ui/overview.js"></script>
+<script src="js/yadage/ui/recast.js"></script>
+<script src="js/yadage/ui/sidebar.js"></script>
+<script src="js/yadage/ui/workflow.js"></script>
+<script src="js/yadage/ui/ui.js"></script>
+
+</head>
+
+<body>
+	<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#sidebar-collapse">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#"><span>YADAGE</span>Admin</a>
+				<ul class="nav navbar-nav navbar-right">
+					<li><a href="./">Home</a></li>
+					<li><a href="#">About</a></li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Help <span class="caret"></span></a>
+		                <ul class="dropdown-menu">
+		                  <li><a href="/yadage/api/v1/doc/index.html">ADAGE Server API</a></li>
+		                  <li><a href="/workflow-repository/api/v1/doc/index.html">Template Server API</a></li>
+		                </ul>
+					</li>
+				</ul>
+			</div>
+
+		</div><!-- /.container-fluid -->
+	</nav>
+
+	<!-- Workflow Listing Sidebar-->
+	<div id="sidebar-collapse" class="col-sm-3 col-lg-2 sidebar"></div>
+
+	<div class="col-sm-9 col-sm-offset-3 col-lg-10 col-lg-offset-2 main">
+		<!-- ADAGE UI - Headline -->
+		<div class="row" id="panel-headline"></div>
+		<!-- Workflow Overview Section -->
+		<div class="row" id="panel-overview"></div>
+		<!-- Display RECAST form -->
+		<div class="row" id="panel-recast-form"></div>
+		<!-- Display Workflow Section -->
+		<div class="row" id="panel-workflow"></div>
+	</div>	<!--/.main-->
+
+</body>
+
+</html>

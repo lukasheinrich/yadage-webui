@@ -1,0 +1,495 @@
+swagger: "2.0"
+
+info:
+  version: 0.0.1
+  title: YADAGE - Workflow Engine API
+  description: API to query and manipulate workflows managed by the A DAG
+    Excecutor (YADAGE) Workflow Server
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+schemes:
+  - http
+host: cds-swg1.cims.nyu.edu:5006/yadage
+basePath: /api/v1
+
+paths:
+    /activities:
+        get:
+            summary: List all current workflow activities
+            description: Returns a list of all active, defined, failed, and
+                successfully completed activities. Allows to filter results by state.
+            operationId: listActivities
+            tags:
+                - activity
+            parameters:
+                - name: state
+                  in: query
+                  required: false
+                  description: Filter activities by state. Valid values are DEFINED,
+                    RUNNING, FAILED, and SUCCESS.
+                  type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: List of activities
+                    schema:
+                        type: object
+                        required:
+                            - activities
+                        properties:
+                            activities:
+                                type: array
+                                items:
+                                    type: object
+                                    required:
+                                        - id
+                                        - state
+                                        - links
+                                    properties:
+                                        id:
+                                            type: string
+                                        state:
+                                            type: string
+                                        links:
+                                            type: array
+                                            items:
+                                                $ref: "#/definitions/Reference"
+                400:
+                    description: Bad request in case of invalid filter value.
+    /activities/{activityIdentifier}:
+        get:
+            summary: Get activity
+            description: Return information for the activity with given identifier
+            operationId: getActivity
+            tags:
+                - activity
+            parameters:
+                - name: activityIdentifier
+                  in: path
+                  required: true
+                  description: Unique activity identifier
+                  type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: Activity object with given identifier
+                    schema:
+                        type: object
+                        $ref: "#/definitions/Activity"
+                404:
+                    description: Unknown activity
+    /activities/{activityIdentifier}/fail:
+        post:
+            summary: Signal failed activity
+            description: Signal that a given activity has failed.
+            operationId: failActivity
+            tags:
+                - activity
+            parameters:
+                - name: activityIdentifier
+                  in: path
+                  required: true
+                  description: Unique activity identifier
+                  type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: The modified activity
+                    schema:
+                        type: object
+                        $ref: "#/definitions/Activity"
+                400:
+                    description: Request validates state transition rules
+                404:
+                    description: Unknown task
+    /activities/{activityIdentifier}/run:
+        post:
+            summary: Signal activity start
+            description: Signal that a given activity has started to run.
+            operationId: runActivity
+            tags:
+                - activity
+            parameters:
+                - name: activityIdentifier
+                  in: path
+                  required: true
+                  description: Unique activity identifier
+                  type: string
+                - name: body
+                  in: body
+                  required: true
+                  description: The proxy that controlls execution of the activity
+                  schema:
+                      type: object
+                      required:
+                          - proxy
+                      properties:
+                          proxy:
+                                type: object
+                                $ref: "#/definitions/Proxy"
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: The modified activity
+                    schema:
+                        type: object
+                        $ref: "#/definitions/Activity"
+                400:
+                    description: Request validates state transition rules
+                404:
+                    description: Unknown activity
+    /activities/{activityIdentifier}/success:
+        post:
+            summary: Signal successful activity completion
+            description: Signal that a given activity has completed successfully.
+            operationId: successActivity
+            tags:
+                - activity
+            parameters:
+                - name: activityIdentifier
+                  in: path
+                  required: true
+                  description: Unique activity identifier
+                  type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: The modified activity
+                    schema:
+                        type: object
+                        $ref: "#/definitions/Activity"
+                400:
+                    description: Request validates state transition rules
+                404:
+                    description: Unknown task
+    /workflows:
+        get:
+            summary: List workflows
+            description: Returns a list of all workflows in the repository
+            operationId: listWorkflows
+            tags:
+                - workflow
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: A list of workflows
+                    schema:
+                        type: object
+                        required:
+                            - workflows
+                        properties:
+                            workflows:
+                                type: array
+                                items:
+                                    $ref: "#/definitions/WorkflowDescriptor"
+        post:
+            summary: Submit a RECAST request
+            description: Creates a new workflow instance from a given template
+            operationId: createWorkflow
+            tags:
+                - workflow
+            parameters:
+                - in: body
+                  name: body
+                  required: true
+                  description: URL of workflow template
+                  schema:
+                      type: object
+                      required:
+                          - template
+                      properties:
+                        template:
+                              type: string
+                        name:
+                            type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: The new workflow descriptor
+                    schema:
+                        type: object
+                        $ref: "#/definitions/WorkflowDescriptor"
+    /workflows/{workflowIdentifier}:
+        get:
+            summary: Get current workflow state
+            description: Returns the current state (e.g., nodes, edges, and open tasks) for a workflow
+            operationId: getWorkflow
+            tags:
+                - workflow
+            parameters:
+                - name: workflowIdentifier
+                  in: path
+                  required: true
+                  description: Unique workflow identifier
+                  type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: A workflow state
+                    schema:
+                        type: object
+                        $ref: "#/definitions/WorkflowInstance"
+                404:
+                    description: Unknown workflow
+        delete:
+            summary: Delete workflow
+            description: Delete a workflow and all of its resources
+            operationId: deleteWorkflow
+            tags:
+                - workflow
+            parameters:
+                - name: workflowIdentifier
+                  in: path
+                  required: true
+                  description: Unique workflow identifier
+                  type: string
+            produces:
+                - application/json
+            responses:
+                204:
+                    description: Empty response indicating success
+                404:
+                    description: Unknown workflow
+    /workflows/{workflowIdentifier}/apply:
+        post:
+            summary: Extend workflow graph
+            description: Extend workflow graph with a set of applicable rules
+            operationId: applyRules
+            tags:
+                - workflow
+            parameters:
+                - name: workflowIdentifier
+                  in: path
+                  required: true
+                  description: Unique workflow identifier
+                  type: string
+                - name: body
+                  in: body
+                  required: true
+                  description: List of rule instances to extend workflow graph
+                  schema:
+                    type: object
+                    required:
+                        - rules
+                    properties:
+                        rules:
+                            type: array
+                            items:
+                                type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: New workflow state
+                    schema:
+                        type: object
+                        $ref: "#/definitions/WorkflowDescriptor"
+                400:
+                    description: Invalid request
+                404:
+                    description: Unknown workflow
+definitions:
+    Activity:
+        required:
+            - id
+            - state
+            - task
+            - timestamps
+            - links
+        properties:
+            id:
+                type: string
+            state:
+                type: string
+            task:
+                type: object
+                $ref: "#/definitions/Task"
+            proxy:
+                type: object
+                $ref: "#/definitions/Proxy"
+            timestamps:
+                type: object
+                $ref: "#/definitions/NodeTimestamps"
+            links:
+                type: array
+                items:
+                    $ref: "#/definitions/Reference"
+    Dependency:
+        type: object
+        required:
+            - dependency_type
+            - expressions
+        properties:
+            dependency_type:
+                type: string
+            expressions:
+                type: array
+                items:
+                    type: string
+    Info:
+        type: object
+        required:
+            - scheduler_type
+            - step
+        properties:
+            parameters:
+                type: object
+                properties:
+                    key:
+                        type: string
+                    value:
+                        type: object
+            scheduler_type:
+                type: string
+            step:
+                type: object
+    Node:
+        required:
+            - id
+            - name
+            - state
+            - timestamps
+        properties:
+            id:
+                type: string
+            name:
+                type: string
+            state:
+                type: string
+            timestamps:
+                type: object
+                $ref: "#/definitions/NodeTimestamps"
+    NodeTimestamps:
+        type: object
+        required:
+            - defined
+        properties:
+            defined:
+                type: string
+            ready by:
+                type: string
+            submit:
+                type: string
+    OffsetRule:
+        required:
+            - id
+            - type
+            - offset
+            - rule
+        properties:
+            id:
+                type: string
+            type:
+                type: string
+            offset:
+                type: string
+            rule:
+                $ref: "#/definitions/Rule"
+    Rule:
+        type: object
+        required:
+            - name
+            - type
+            - dependencies
+            - info
+            - step
+        properties:
+            name:
+                type: string
+            type:
+                type: string
+            info:
+                $ref: "#/definitions/Info"
+            dependencies:
+                type: array
+                items:
+                    $ref: "#/definitions/Dependency"
+            context:
+                type: object
+    Reference:
+        type: object
+        required:
+            - rel
+            - href
+        properties:
+            rel:
+                type: string
+            href:
+                type: string
+    WorkflowDescriptor:
+        required:
+            - id
+            - name
+            - state
+            - links
+        properties:
+            id:
+                type: string
+            name:
+                type: string
+            state:
+                type: string
+            links:
+                type: array
+                items:
+                    $ref: "#/definitions/Reference"
+    WorkflowInstance:
+        required:
+            - id
+            - name
+            - state
+            - dag
+            - rules
+            - applied
+            - applicableRules
+            - links
+        properties:
+            id:
+                type: string
+            name:
+                type: string
+            state:
+                type: string
+            dag:
+                type: object
+                required:
+                    - nodes
+                    - edges
+                properties:
+                    nodes:
+                        type: array
+                        items:
+                            $ref: "#/definitions/Node"
+                    edges:
+                        type: array
+                        items:
+                            type: array
+                            items:
+                                type: string
+
+            rules:
+                type: array
+                items:
+                    $ref: "#/definitions/OffsetRule"
+            applied:
+                type: array
+                items:
+                    $ref: "#/definitions/OffsetRule"
+            applicableRules:
+                type: array
+                items:
+                    type: string
+            links:
+                type: array
+                items:
+                    $ref: "#/definitions/Reference"
