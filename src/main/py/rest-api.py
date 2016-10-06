@@ -85,9 +85,48 @@ def create_workflow():
         abort(400)
     if not 'template' in request.json:
         abort(400)
+    # Get dictionary of user provided input data
+    request_para = {}
+    if 'parameters' in request.json:
+        for para in request.json['parameters']:
+            if not 'key' in para or not 'value' in para:
+                abort(400)
+            request_para[para['key']] = para['value']
     # Read the template at the given template URL
     template_url = request.json['template']
     workflow_def = JsonResource(template_url).json
+    # Construct dictionary of input data
+    init_data = {}
+    if 'parameters' in workflow_def:
+        for para in workflow_def['parameters']:
+            para_key = para['name']
+            para_value = None
+            if para_key in request_para:
+                para_value = request_para[para_key]
+            elif 'default' in para:
+                para_value = para['default']
+            else:
+                abort(400)
+            # TODO: Convert parameter values from strings to requested type
+            if para['type'] == 'int':
+                para_value = int(para_value)
+            elif para['type'] == 'float':
+                para_value = float(para_value)
+            elif para['type'] == 'array':
+                value_list = para_value.split(',')
+                para_value = []
+                for val in value_list:
+                    if para['items'] == 'int':
+                        para_value.append(int(val))
+                    elif para['type'] == 'float':
+                        para_value.append(float(val))
+                    elif para['type'] == 'string':
+                        para_value.append(val)
+                    else:
+                        abort(500)
+            elif para['type'] != 'string':
+                abort(500)
+            init_data[para_key] = para_value
     # Get the user provided workflow name. If no name was provided use the
     # template name
     if 'name' in request.json:
@@ -97,7 +136,7 @@ def create_workflow():
     else:
         workflow_name = str(workflow_def['name'])
     # Submit request to workflow engine
-    workflow = yadage.create_workflow(workflow_def, workflow_name)
+    workflow = yadage.create_workflow(workflow_def, workflow_name, init_data=init_data)
     #print workflow.identifier
     # Send response with code 201 (HTTP Created)
     return jsonify(api.get_workflow_descriptor(workflow)), 201

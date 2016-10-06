@@ -7,6 +7,34 @@ var TEMPLATE_SERVER_URL = 'http://cds-swg1.cims.nyu.edu:5005/workflow-repository
 
 
 /**
+ * Select template function. Shows tmplate information and displays form for
+ * template parameters.
+ */
+ function showTemplate(template) {
+   $('#worflow-description').html(template.description);
+   $('#worflow-name').val(template.name);
+   form_html = '';
+   if (template.parameters) {
+     form_html = '<label class="form-label">Input Data</label>'
+     var rule_params = template.parameters;
+     for (var i_para = 0; i_para < rule_params.length; i_para++) {
+       var para = rule_params[i_para];
+       var cntrl_id = template.id + '_' + para.name;
+       var para_label = para.name;
+       if (para.label) {
+         para_label = para.label;
+       }
+       var para_default = '';
+       if (para.default) {
+         para_default = para.default;
+       }
+       form_html += '<div class="container-fluid"><label class="ctrl-label" for="' + cntrl_id + '">' + para_label + '</label><input type="text" class="form-control" id="' + cntrl_id + '" value="' + para_default + '"></div>'
+     }
+   }
+   $('#worflow-parameters').html(form_html);
+ };
+
+/**
   * Capture functionality for recast form.
   */
  var RECASTForm = function(ui) {
@@ -46,6 +74,7 @@ var TEMPLATE_SERVER_URL = 'http://cds-swg1.cims.nyu.edu:5005/workflow-repository
         html += '           <input class="form-control" type="text" id="worflow-name"></input>';
         html += '           <label class="form-label">Description</label>';
         html += '           <div class="text-panel" id="worflow-description"></div>';
+        html += '           <div class="form-panel" id="worflow-parameters"></div>';
         html += '       </div>';
         html += '       <button type="button" class="btn btn-default" id="btn-submit-recast">Submit</button>';
         html += '   </form>'; // FORM (END)
@@ -61,9 +90,7 @@ var TEMPLATE_SERVER_URL = 'http://cds-swg1.cims.nyu.edu:5005/workflow-repository
         // Assign event handler when selecting a workflow template
         var templates = this.templates;
         $('#sel-workflow-template').click(function() {
-            var template = templates[$('#sel-workflow-template')[0].selectedIndex];
-            $('#worflow-description').html(template.description);
-            $('#worflow-name').val(template.name);
+            showTemplate(templates[$('#sel-workflow-template')[0].selectedIndex]);
         });
      },
      /**
@@ -75,16 +102,16 @@ var TEMPLATE_SERVER_URL = 'http://cds-swg1.cims.nyu.edu:5005/workflow-repository
          $.get(TEMPLATE_SERVER_URL + '/templates', function(data, status) {
              if (status === 'success') {
                  //form.templates = [];
+                 templates.length = 0
                  if (data.workflows.length > 0) {
                      var html = '';
                      for (var i_wf = 0; i_wf < data.workflows.length; i_wf++) {
                          wf = data.workflows[i_wf];
                          templates.push(wf);
-                         html += '<option value="' + getSelfReference(wf.links) + '">' + wf.name + '</option>';
+                         html += '<option value="' + wf.id + '">' + wf.name + '</option>';
                      }
                      $('#sel-workflow-template').html(html);
-                     $('#worflow-name').val(templates[0].name);
-                     $('#worflow-description').html(templates[0].description);
+                     showTemplate(templates[0]);
                  }
              }
          });
@@ -93,24 +120,49 @@ var TEMPLATE_SERVER_URL = 'http://cds-swg1.cims.nyu.edu:5005/workflow-repository
       * Submit the selected workflow template.
       */
      submit : function() {
-         var sel_val = $('#sel-workflow-template').val();
          var ui = this.ui;
+         var sel_val = $('#sel-workflow-template').val();
          if (sel_val) {
-             var reqBody = {'template' : sel_val, 'name' : $('#worflow-name').val()};
-             $.ajax({
-                 url: API_BASE_URL + '/workflows',
-                 type: 'POST',
-                 contentType: 'application/json',
-                 data: JSON.stringify(reqBody),
-                 success: function(data) {
-                     ui.reload();
-                 },
-                 error: function() {
-                     alert('There was an error while submitting your request.');
+			 var template;
+             for (var i = 0; i < this.templates.length; i++) {
+				 if (this.templates[i].id === sel_val) {
+					 template = this.templates[i];
+					 break;
+				 }
+			 }
+			 if (template) {
+                 // Collect potential user input values for rule parameters
+                 var inputData = [];
+                 if (template.parameters) {
+                     for (var i_para = 0; i_para < template.parameters.length; i_para++) {
+                         var para = template.parameters[i_para];
+                    	 var cntrl_id = template.id + '_' + para.name;
+						 inputData.push({'key' : para.name, 'value' : $('#' + cntrl_id).val()});
+                     }
                  }
-             });
-         } else {
-           alert('Please selct a workflow template from the list.');
-         }
+	             var reqBody = {
+					 'template' : getSelfReference(template.links),
+					 'name' : $('#worflow-name').val(),
+					 'parameters' : inputData
+				 };
+				 console.log(reqBody);
+	             $.ajax({
+	                 url: API_BASE_URL + '/workflows',
+	                 type: 'POST',
+	                 contentType: 'application/json',
+	                 data: JSON.stringify(reqBody),
+	                 success: function(data) {
+	                     ui.reload();
+	                 },
+	                 error: function() {
+	                     alert('There was an error while submitting your request.');
+	                 }
+	             });
+	         } else {
+	           alert('Error: Selected workflow not found');
+	         }
+		 } else {
+		   alert('Please selct a workflow template from the list.');
+		 }
      }
  };

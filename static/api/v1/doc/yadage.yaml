@@ -210,6 +210,18 @@ paths:
                               type: string
                         name:
                             type: string
+                        parameters:
+                            type: array
+                            items:
+                                type: object
+                                required:
+                                    - key
+                                    - value
+                                properties:
+                                    key:
+                                        type: string
+                                    value:
+                                        type: string
             produces:
                 - application/json
             responses:

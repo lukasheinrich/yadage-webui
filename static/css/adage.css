@@ -24,6 +24,12 @@ label.form-label {
     padding-left: 0.5em;
 }
 
+label.ctrl-label {
+    margin-top: 1em;
+    padding-left: 0.5em;
+    font-weight: lighter;
+}
+
 /*
  * CONTROLS
  */

@@ -9,6 +9,7 @@ import adage
 import adage.dagstate as dagstate
 import adage.nodestate as nodestate
 import os
+import shutil
 import uuid
 import yadage.backends.packtivity_celery
 import yadage.backends.celeryapp
@@ -102,7 +103,7 @@ class YADAGEEngine:
         # Get the state of the workflow and update the workflow in the database.
         #state = self.get_workflow_state(workflow, self.get_applicable_rules(workflow))
         workflow_json = workflow.json()
-        self.db.update_workflow(workflow_id, workflow_inst.name, workflow.state.name, workflow_json)
+        self.db.update_workflow(workflow_id, workflow_inst.name, workflow_inst.state, workflow_json)
         return True
 
     # --------------------------------------------------------------------------
@@ -110,11 +111,11 @@ class YADAGEEngine:
     #
     # workflow_def::JsonObject (for workflow template)
     # name::string
-    # init_param::{}
+    # init_data::{}
     #
     # returns: WorkflowDescriptor
     # --------------------------------------------------------------------------
-    def create_workflow(self, workflow_def, name, init_param={'nevents':100}):
+    def create_workflow(self, workflow_def, name, init_data={}):
         # Generate a unique identifier for the new workflow instance
         identifier = str(uuid.uuid4())
         # Create root context for new workflow instance. Will create a new
@@ -129,7 +130,7 @@ class YADAGEEngine:
         # Create YADAGE Workflow from the given workflow template. Initialize
         # workflow with optional inittialization parameters.
         workflow = YadageWorkflow.createFromJSON(workflow_def, root_context)
-        workflow.view().init(init_param)
+        workflow.view().init(init_data)
         workflow_json = workflow.json()
         # Derive the workflow state. For now this has to be WAITING after our
         # previous manipualtions. Otherwise uncomment the following line.
@@ -147,7 +148,12 @@ class YADAGEEngine:
     # returns: True, if worlflow deleted, False if not found
     # --------------------------------------------------------------------------
     def delete_workflow(self, workflow_id):
-        return self.db.delete_workflow(workflow_id)
+        if self.db.delete_workflow(workflow_id):
+            workdir = os.path.join(self.work_dir, workflow_id)
+            shutil.rmtree(workdir)
+            return True
+        else:
+            False
 
     # --------------------------------------------------------------------------
     # Get a list of identifier for all rules in the given YADAGE workflow that

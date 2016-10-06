@@ -66,24 +66,10 @@ WorkflowPanel.prototype = {
          // List applicable rules
          var wf_rules_html = '';
          if (workflow.applicable_rules.length > 0) {
-             wf_rules_html = '<h3 class="panel-section">Pending Tasks</h3>';
+             wf_rules_html = '<h3 class="panel-section">Applicable Rules</h3>';
              workflow.applicable_rules.forEach(function(rule_id) {
                  var rule = workflow.rules[rule_id];
                  wf_rules_html += '<div class="rule-checkbox"><input type="checkbox" class="chkApplicableRule" id="chk_' + rule_id + '" value="' + rule_id + '"><label for="chk_' + rule_id + '"><span></span>' + rule.name + '</label></div>';
-                 if (rule.info.parameters) {
-                     rule_params = rule.info.parameters;
-                     var rule_form_html = '';
-                     for (var i_para = 0; i_para < rule_params.length; i_para++) {
-                         var para = rule_params[i_para];
-                         if (para.value.source === 'user') {
-                             var cntrl_id = rule_id + '_' + para.key;
-                             rule_form_html += '<div class="container-fluid"><label for="' + cntrl_id + '">' + para.value.label + '</label><input type="text" class="form-control" id="' + cntrl_id + '"></div>'
-                         }
-                     }
-                     if (rule_form_html !== '') {
-                         wf_rules_html += '<div class="rule-form">' + rule_form_html + '</div>';
-                     }
-                 }
              });
              wf_rules_html += '<div id="submitRulesMessage"></div>';
              wf_rules_html += '<button type="button" class="btn btn-default" id="btn-submit-rules-form">Run</button>';
@@ -111,21 +97,6 @@ WorkflowPanel.prototype = {
          $('.chkApplicableRule').each(function() {
              if ($(this).is(':checked')) {
                  var rule_id = $(this).val();
-                 /*var rule = workflow.rules[rule_id];
-                 // Collect potential user input values for rule parameters
-                 var submit_params = [];
-                 if (rule.info.parameters) {
-                     rule_params = rule.info.parameters;
-                     var rule_form_html = '';
-                     for (var i_para = 0; i_para < rule_params.length; i_para++) {
-                         var para = rule_params[i_para];
-                         if (para.value.source === 'user') {
-                             var cntrl_id = rule_id + '_' + para.key;
-                             submit_params.push({'key' : para.key, 'value' : $('#' + rule_id + '_' + para.key).val()});
-                         }
-                     }
-                 }
-                 rules.push({'id' : rule_id, 'parameters' : submit_params});*/
                  rules.push(rule_id);
              }
          })
