@@ -1,10 +1,4 @@
 /**
- * Base URL of the ADAGE Server API
- */
-var API_BASE_URL = 'http://cds-swg1.cims.nyu.edu:5006/yadage/api/v1'
-
-
-/**
  * ADAGE UI - Contains several UI components.
  */
 var ADAGEUI = function() {
@@ -170,7 +164,28 @@ ADAGEUI.prototype = {
                 ui.setWorkflow(null);
             }
         });
-    }
+    },
+    /**
+     * Apply a set of rules for the workflow with the given identifier.
+     *
+     * workflow_id: string
+     * rules: [{id:..., parameter: {key:...,value:...}}]
+     */
+    submitNodesForWorkflow : function(workflow_id, nodes) {
+        var ui = this;
+        $.ajax({
+            url: API_BASE_URL + '/workflows/' + workflow_id + '/submit',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({'nodes' : nodes}),
+            success: function(data) {
+                ui.reload();
+            },
+            error: function() {
+                alert('There was an error while submitting your request.');
+            }
+        });
+    },
 };
 
 // Create global ADAGE UI instance. NOTE: Renaming the variable will currently

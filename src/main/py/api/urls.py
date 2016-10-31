@@ -60,6 +60,16 @@ class URLFactory:
         return self.get_activity_url(activity_id) + '/success'
 
     # --------------------------------------------------------------------------
+    # URL to download workflow files
+    #
+    # path::string
+    #
+    # returns string
+    # --------------------------------------------------------------------------
+    def get_file_url(self, path):
+        return self.base_url + '/files/' + path
+
+    # --------------------------------------------------------------------------
     # Workflow URL
     #
     # workflow_id: string
@@ -67,4 +77,12 @@ class URLFactory:
     # returns: string
     # --------------------------------------------------------------------------
     def get_workflow_url(self, workflow_id):
-        return self.base_url + '/workflows/' + str(workflow_id)
+        return self.get_workflow_list_url() + '/' + str(workflow_id)
+
+    # --------------------------------------------------------------------------
+    # Workflow Listing URL
+    #
+    # returns: string
+    # --------------------------------------------------------------------------
+    def get_workflow_list_url(self):
+        return self.base_url + '/workflows'

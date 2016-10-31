@@ -91,6 +91,16 @@ var Workflow = function(workflow_obj) {
      * @type: [string]
      */
     this.applicable_rules = workflow_obj.applicableRules;
+    /**
+     * List of applicable nodes
+     *
+     * @type: [string]
+     */
+    this.submittable_nodes = [];
+    for (var i_node = 0; i_node < workflow_obj.submittableNodes.length; i_node++) {
+        var node = this.dag.getNode(workflow_obj.submittableNodes[i_node]);
+        this.submittable_nodes.push(node);
+    }
 };
 
 

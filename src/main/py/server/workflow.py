@@ -71,13 +71,15 @@ class WorkflowInstance(WorkflowDescriptor):
     # rules::JsonObject
     # applied_rules::JsonObject
     # applicable_rules::[string]
+    # submittable_nodes::[strig]
     # --------------------------------------------------------------------------
-    def __init__(self, identifier, name, state, dag, rules, applied_rules, applicable_rules):
+    def __init__(self, identifier, name, state, dag, rules, applied_rules, applicable_rules, submittable_nodes):
         super(WorkflowInstance, self).__init__(identifier, name, state)
         self.dag = dag
         self.rules = rules
         self.applied_rules = applied_rules
         self.applicable_rules = applicable_rules
+        self.submittable_nodes = submittable_nodes
 
 
 # ------------------------------------------------------------------------------

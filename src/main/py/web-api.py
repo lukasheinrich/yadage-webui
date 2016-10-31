@@ -1,4 +1,4 @@
-#!env/bin/python
+#!venv/bin/python
 
 # ------------------------------------------------------------------------------'
 #
@@ -10,56 +10,133 @@
 #
 # ------------------------------------------------------------------------------
 
-from flask import Flask, abort, jsonify, make_response, request
+from flask import Flask, abort, jsonify, make_response, request, send_from_directory
 from flask_cors import CORS
-from pymongo import MongoClient
+import getopt
+import os
 
 from api.http import JsonResource
 from api.web_service import WebServiceAPI
+from server.backend import MongoBackendManager
 from server.engine import YADAGEEngine
-from server.repository import MongoDBInstanceManager
+from server.repository import MongoDBFactory, MongoDBInstanceManager
 from server.rule import RuleInstance
 
 import logging
 import sys
 
-root = logging.getLogger()
-root.setLevel(logging.DEBUG)
+from yadage.backends.celeryapp import redis_string
 
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-root.addHandler(ch)
 
 # ------------------------------------------------------------------------------
 # App Configuration and Initialization
 # ------------------------------------------------------------------------------
 
-APP_PATH = '/yadage/api/v1'
-SERVER_URL = 'http://cds-swg1.cims.nyu.edu'
+SERVER_URL = 'http://localhost'
 PORT = 5006
-
-# Create the app and enable cross-origin resource sharing
-app = Flask(__name__)
-app.config['APPLICATION_ROOT'] = APP_PATH
-CORS(app)
+APP_PATH = '/yadage/api/v1'
 
 # Base directory for all workflow files
 WORK_BASE = '../../../../backend/data/'
-# Initialize the URL factory
-api = WebServiceAPI(SERVER_URL + ':' + str(PORT) + APP_PATH)
+
+
+# ------------------------------------------------------------------------------
+# Parse command line arguments
+# ------------------------------------------------------------------------------
+if __name__ == '__main__':
+    command_line = 'Usage: [-a | --path <app-path>] [-d | --data-dir <base-directory>] [-p | --port <port-number>] [-s | --server <server-url>]'
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'a:d:p:s:', 'data-dir=,path=,port=0,server=')
+    except getopt.GetoptError:
+        print command_line
+        sys.exit()
+
+    if len(args) != 0:
+        print command_line
+        sys.exit()
+
+    for opt, param in opts:
+        if opt in ('-a', '--path'):
+            APP_PATH = param
+            if not APP_PATH.startswith('/'):
+                print 'Invalid application path: ' + APP_PATH
+                sys.exit()
+            if APP_PATH.endswith('/'):
+                APP_PATH = APP_PATH[:-1]
+        elif opt in ('-d', '--data-dir'):
+            WORK_BASE = param
+        elif opt in ('-p', '--port'):
+            try:
+                PORT = int(param)
+            except ValueError:
+                print 'Invalid port number: ' + param
+                sys.exit()
+        elif opt in ('-s', '--server'):
+            SERVER_URL = param
+
+if not os.access(WORK_BASE, os.F_OK):
+    print 'Directory not found: ' + WORK_BASE
+    sys.exit()
+WORK_BASE = os.path.abspath(WORK_BASE)
+
+# ------------------------------------------------------------------------------
+# Initialize the Web app
+# ------------------------------------------------------------------------------
+
+# Create the app and enable cross-origin resource sharing
+app = Flask(__name__, static_url_path=WORK_BASE)
+app.config['APPLICATION_ROOT'] = APP_PATH
+CORS(app)
+
+# Initialize the URL factory. Base URL is used as prefix for all HATEOAS URL's
+if PORT != 80:
+    BASE_URL = SERVER_URL + ':' + str(PORT) + APP_PATH
+else:
+    BASE_URL = SERVER_URL + APP_PATH
+api = WebServiceAPI(BASE_URL)
+print 'Running at ' + BASE_URL
+
 # Initialize the YADAGE Server engine. Here we use MongoDB as storage backend.
 # Workflows are stored in database 'yadage' and collection 'workflows'.
+db = MongoDBFactory.get_database()
 yadage = YADAGEEngine(
-    MongoDBInstanceManager(MongoClient().yadage.workflows),
-    WORK_BASE
+    MongoDBInstanceManager(db.workflows),
+    WORK_BASE,
+    MongoBackendManager(db.tasks)
 )
 
 
 # ------------------------------------------------------------------------------
 # API Call Handlers
 # ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# GET: Welcome Message
+#
+# Main object for the web service. Contains the service name and a list of
+# references (including a reference to the API documentation, which is currently
+# a hard coded URL).
+# ------------------------------------------------------------------------------
+@app.route('/')
+def get_welcome():
+
+    return jsonify({
+        'name': 'Workflow Engine API',
+        'links' : [
+            {'rel' : 'self', 'href' : BASE_URL},
+            {'rel' : 'doc', 'href' : 'http://cds-swg1.cims.nyu.edu/yadage/api/v1/doc/index.html'},
+            {'rel' : 'workflows', 'href' : api.urls.get_workflow_list_url()}
+        ]
+    })
+
+# ------------------------------------------------------------------------------
+# GET: Workflow file
+#
+# Returns a file from a workflow working directory.
+# ------------------------------------------------------------------------------
+@app.route('/files/<path:path>')
+def send_file(path):
+    return send_from_directory(WORK_BASE, path)
 
 # ------------------------------------------------------------------------------
 # GET: Workflow Listing
@@ -194,6 +271,44 @@ def apply_rules(workflow_id):
     return jsonify(api.get_workflow_descriptor(workflow))
 
 # ------------------------------------------------------------------------------
+# GET: Workflow directory listing
+#
+# Recursive listing of all files in the workflow working directory.
+# ------------------------------------------------------------------------------
+@app.route('/workflows/<string:workflow_id>/files')
+def get_workflow_files(workflow_id):
+    # Abort with 404 if the workflow does not exist.
+    workflow = yadage.get_workflow(workflow_id)
+    if not workflow:
+        abort(404)
+    # Return the workflow directory listing
+    directory_name = os.path.join(WORK_BASE, workflow_id)
+    return jsonify(api.get_directory_listing(directory_name, workflow_id))
+
+# ------------------------------------------------------------------------------
+# POST: Submit task
+#
+# Submit a set of tasks for execution. Expects a list of node identifiers.
+# ------------------------------------------------------------------------------
+@app.route('/workflows/<string:workflow_id>/submit', methods=['POST'])
+def submit_tasks(workflow_id):
+    # Abort with BAD REQUEST if the request body is not in Json format or
+    # does not contain a reference to a list of runnable nodes
+    if not request.json:
+        abort(400)
+    json_obj = request.json
+    if not 'nodes' in json_obj:
+        abort(400)
+    # Submit nodes for execution. The result is False if the workflow does
+    # not exist.
+    success = yadage.submit_nodes(workflow_id, json_obj['nodes'])
+    if not success:
+        abort(404)
+    # Return the descriptor of the modified workflow.
+    workflow = yadage.get_workflow(workflow_id)
+    return jsonify(api.get_workflow_descriptor(workflow))
+
+# ------------------------------------------------------------------------------
 # 404 JSON response generator
 # ------------------------------------------------------------------------------
 @app.errorhandler(404)
@@ -201,6 +316,10 @@ def not_found(error):
     print str(error)
     return make_response(jsonify({'error': 'Not found'}), 404)
 
+
+# ------------------------------------------------------------------------------
+# Helper methods
+# ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
 # MAIN

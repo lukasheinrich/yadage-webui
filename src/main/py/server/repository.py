@@ -5,9 +5,8 @@
 # Classes implement the workflow instance store API.
 #
 # ------------------------------------------------------------------------------
-import pymongo
-
 from abc import abstractmethod
+from pymongo import MongoClient
 
 from workflow import WorkflowDBInstance
 
@@ -83,6 +82,24 @@ class WorkflowInstanceManager(object):
     @abstractmethod
     def update_workflow(self, workflow_id, name, state, workflow_json):
         pass
+
+
+# ------------------------------------------------------------------------------
+# CLASS: MongoDBFactory
+#
+# Wraps code to establish connection with MongoDB database that is used by the
+# Web API and the Backend Manager.
+# ------------------------------------------------------------------------------
+class MongoDBFactory:
+    # --------------------------------------------------------------------------
+    # get reference to MongoDB database. We currently use database 'yadage'
+    # from the MongoDB server running on local host.
+    #
+    # returns Database
+    # --------------------------------------------------------------------------
+    @staticmethod
+    def get_database():
+        return MongoClient().yadage
 
 
 # ------------------------------------------------------------------------------

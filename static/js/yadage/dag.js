@@ -72,4 +72,17 @@ var ADAGEDAG = function(dag_obj) {
          var node = dag_obj.nodes[i_node];
          this.nodes.push(new ADAGENode(node));
      }
+     /**
+      * Return node with given identifier
+      *
+      * @type ADAGENode
+      */
+     this.getNode = function(node_id) {
+        for (var i_node = 0; i_node < this.nodes.length; i_node++) {
+            var node = this.nodes[i_node];
+            if (node.id === node_id) {
+                return node;
+            }
+        }
+     };
 };

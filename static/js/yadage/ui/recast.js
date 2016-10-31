@@ -3,7 +3,7 @@
  */
 
 // Default URL of template server
-var TEMPLATE_SERVER_URL = 'http://cds-swg1.cims.nyu.edu:5005/workflow-repository/api/v1';
+var TEMPLATE_SERVER_URL = 'http://cds-swg1.cims.nyu.edu/workflow-repository/api/v1';
 
 
 /**

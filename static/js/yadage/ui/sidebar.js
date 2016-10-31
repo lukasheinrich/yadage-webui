@@ -104,7 +104,7 @@ WorkflowSidebarListing.prototype = {
          // Assign onclick event handler to all sidebar list items
          for (let wf_id in ui.workflows.lookup) {
              $('#wf-listitem-' + wf_id).click(function() {
-                 ui.showWorkflow(wf_id);
+                 ui.showWorkflow(this.id.substring(12));
              });
          }
      },

@@ -15,160 +15,26 @@ host: cds-swg1.cims.nyu.edu:5006/yadage
 basePath: /api/v1
 
 paths:
-    /activities:
+    /files/{filePath}:
         get:
-            summary: List all current workflow activities
-            description: Returns a list of all active, defined, failed, and
-                successfully completed activities. Allows to filter results by state.
-            operationId: listActivities
+            summary: Get workflow files
+            description: Get static file from workflow working directory
+            operationsId: sendFile
             tags:
-                - activity
+                - files
             parameters:
-                - name: state
-                  in: query
-                  required: false
-                  description: Filter activities by state. Valid values are DEFINED,
-                    RUNNING, FAILED, and SUCCESS.
-                  type: string
-            produces:
-                - application/json
-            responses:
-                200:
-                    description: List of activities
-                    schema:
-                        type: object
-                        required:
-                            - activities
-                        properties:
-                            activities:
-                                type: array
-                                items:
-                                    type: object
-                                    required:
-                                        - id
-                                        - state
-                                        - links
-                                    properties:
-                                        id:
-                                            type: string
-                                        state:
-                                            type: string
-                                        links:
-                                            type: array
-                                            items:
-                                                $ref: "#/definitions/Reference"
-                400:
-                    description: Bad request in case of invalid filter value.
-    /activities/{activityIdentifier}:
-        get:
-            summary: Get activity
-            description: Return information for the activity with given identifier
-            operationId: getActivity
-            tags:
-                - activity
-            parameters:
-                - name: activityIdentifier
+                - name: filePath
                   in: path
                   required: true
-                  description: Unique activity identifier
+                  description: Relative file path
                   type: string
-            produces:
-                - application/json
             responses:
                 200:
-                    description: Activity object with given identifier
+                    description: The requested file
                     schema:
-                        type: object
-                        $ref: "#/definitions/Activity"
+                        type: file
                 404:
-                    description: Unknown activity
-    /activities/{activityIdentifier}/fail:
-        post:
-            summary: Signal failed activity
-            description: Signal that a given activity has failed.
-            operationId: failActivity
-            tags:
-                - activity
-            parameters:
-                - name: activityIdentifier
-                  in: path
-                  required: true
-                  description: Unique activity identifier
-                  type: string
-            produces:
-                - application/json
-            responses:
-                200:
-                    description: The modified activity
-                    schema:
-                        type: object
-                        $ref: "#/definitions/Activity"
-                400:
-                    description: Request validates state transition rules
-                404:
-                    description: Unknown task
-    /activities/{activityIdentifier}/run:
-        post:
-            summary: Signal activity start
-            description: Signal that a given activity has started to run.
-            operationId: runActivity
-            tags:
-                - activity
-            parameters:
-                - name: activityIdentifier
-                  in: path
-                  required: true
-                  description: Unique activity identifier
-                  type: string
-                - name: body
-                  in: body
-                  required: true
-                  description: The proxy that controlls execution of the activity
-                  schema:
-                      type: object
-                      required:
-                          - proxy
-                      properties:
-                          proxy:
-                                type: object
-                                $ref: "#/definitions/Proxy"
-            produces:
-                - application/json
-            responses:
-                200:
-                    description: The modified activity
-                    schema:
-                        type: object
-                        $ref: "#/definitions/Activity"
-                400:
-                    description: Request validates state transition rules
-                404:
-                    description: Unknown activity
-    /activities/{activityIdentifier}/success:
-        post:
-            summary: Signal successful activity completion
-            description: Signal that a given activity has completed successfully.
-            operationId: successActivity
-            tags:
-                - activity
-            parameters:
-                - name: activityIdentifier
-                  in: path
-                  required: true
-                  description: Unique activity identifier
-                  type: string
-            produces:
-                - application/json
-            responses:
-                200:
-                    description: The modified activity
-                    schema:
-                        type: object
-                        $ref: "#/definitions/Activity"
-                400:
-                    description: Request validates state transition rules
-                404:
-                    description: Unknown task
+                    description: File not found
     /workflows:
         get:
             summary: List workflows
@@ -310,6 +176,67 @@ paths:
                     description: Invalid request
                 404:
                     description: Unknown workflow
+    /workflows/{workflowIdentifier}/files:
+        get:
+            summary: List workflow files
+            description: Get listing of contents in workflow working directory
+            operationId: getWorkflowFiles
+            tags:
+                - workflow
+            parameters:
+                - name: workflowIdentifier
+                  in: path
+                  required: true
+                  description: Unique workflow identifier
+                  type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: Recursive directory listing
+                    schema:
+                        type: object
+                        $ref: "#/definitions/Directory"
+                404:
+                    description: Unknown workflow
+    /workflows/{workflowIdentifier}/submit:
+        post:
+            summary: Submit tasks for execution
+            description: Submit set of runnable nodes for execution.
+            operationId: submitTasks
+            tags:
+                - workflow
+            parameters:
+                - name: workflowIdentifier
+                  in: path
+                  required: true
+                  description: Unique workflow identifier
+                  type: string
+                - name: body
+                  in: body
+                  required: true
+                  description: List of node identifier
+                  schema:
+                    type: object
+                    required:
+                        - nodes
+                    properties:
+                        nodes:
+                            type: array
+                            items:
+                                type: string
+            produces:
+                - application/json
+            responses:
+                200:
+                    description: New workflow state
+                    schema:
+                        type: object
+                        $ref: "#/definitions/WorkflowDescriptor"
+                400:
+                    description: Invalid request
+                404:
+                    description: Unknown workflow
 definitions:
     Activity:
         required:
@@ -348,6 +275,31 @@ definitions:
                 type: array
                 items:
                     type: string
+    Directory:
+        type: object
+        required:
+            - files
+        properties:
+            files:
+                type: array
+                items:
+                    $ref : "#/definitions/File"
+    File:
+        type: object
+        required:
+            - type
+            - name
+        properties:
+            type:
+                type: string
+            name:
+                type: string
+            href:
+                type: string
+            files:
+                type: array
+                items:
+                    $ref: "#/defintions/File"
     Info:
         type: object
         required:
