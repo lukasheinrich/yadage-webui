@@ -1,4 +1,4 @@
-#!venv/bin/python
+#!env/bin/python
 
 import adage
 import adage.nodestate as nodestate
@@ -28,7 +28,7 @@ yadage_backend = yadage.backends.packtivity_celery.PacktivityCeleryBackend(
 # ------------------------------------------------------------------------------
 def submit_node(workflow_id, node_id):
     print str(workflow_id) + ':' + str(node_id)
-    db = MongoClient().yadage
+    db = MongoDBFactory.get_database()
     instance_manager = MongoDBInstanceManager(db.workflows)
     # Remove task from queue
     MongoBackendManager(db.tasks).delete_task(workflow_id, node_id)

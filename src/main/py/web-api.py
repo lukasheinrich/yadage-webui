@@ -1,4 +1,4 @@
-#!venv/bin/python
+#!env/bin/python
 
 # ------------------------------------------------------------------------------'
 #
@@ -73,7 +73,10 @@ if __name__ == '__main__':
                 sys.exit()
         elif opt in ('-s', '--server'):
             SERVER_URL = param
+            if SERVER_URL.endswith('/'):
+                SERVER_URL = SERVER_URL[:-1]
 
+# Make sure the directory for workflow inputs and outputs exists
 if not os.access(WORK_BASE, os.F_OK):
     print 'Directory not found: ' + WORK_BASE
     sys.exit()
