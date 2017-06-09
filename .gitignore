@@ -1,5 +1,2 @@
 *.pyc
-dump.rdb
-yadage-webui.tar.gz
-src/main/py/venv/
-src/main/py/env/
+yadagewebui/venv/

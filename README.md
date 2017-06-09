@@ -28,12 +28,14 @@ Set up the environment using the following commands:
 cd src/main/py
 virtualenv venv
 source venv/bin/activate
+pip install adage
+pip install cap-schemas
+pip install packtivity
+pip install yadage
 pip install flask
 pip install -U flask-cors
 pip install pymongo
-pip install celery
-pip install adage
-pip install yadage
+pip install -U celery[redis]
 deactivate
 ```
 

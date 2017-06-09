@@ -78,11 +78,11 @@ WorkflowGraph.prototype = {
             // be undefined
             if (rule.dependencies) {
                 rule.dependencies.expressions.forEach(function(key) {
-                    node_hash[key].forEach(function(source) {
-                        edges.push({'from': source.id, 'to': node_id, 'arrows': 'to', 'smooth': {'type': 'horizontal'}})
-                    });
-            //    edges.push({'from': map_rules[key], 'to': node_id, 'arrows': 'to', 'smooth': {'type': 'horizontal'}})
-                //console.log(rule.name + ' depends on ' + map_rules[key]);
+                    if (node_hash[key] != null) {
+                        node_hash[key].forEach(function(source) {
+                            edges.push({'from': source.id, 'to': node_id, 'arrows': 'to', 'smooth': {'type': 'horizontal'}})
+                        });
+                    }
                 });
             }
         });

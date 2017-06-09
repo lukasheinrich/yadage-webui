@@ -1,211 +1,214 @@
 /**
+ * Element identifier for main components of the UI
+ */
+var $EL_HEADLINE = 'panel-headline';
+var $EL_OVERVIEW = 'panel-overview';
+var $EL_CONTENT = 'panel-content';
+
+/**
+ * Content types
+ */
+var CONTENT_LISTING = 'LISTING';
+var CONTENT_WORKFLOW = 'WORKFLOW';
+
+var CORSify = (url) => {
+    if (!url.endsWith('/')) {
+        return url + '/';
+    } else {
+        return url;
+    }
+}
+/**
+ * Error hander for AJAX calls
+ */
+var ERROR = (xhr, status, error) => {
+    let message;
+    if (xhr.responseText) {
+        message = xhr.responseText;
+    } else {
+        message = 'There was an error while loading content from the server.';
+    }
+    $('#' + $EL_CONTENT).html(
+        '<div class="container-fluid">' +
+            '<p class="error-message">' +
+                '<i class="fa fa-exclamation-triangle" aria-hidden="true"></i>&nbsp;&nbsp;' +
+                message +
+            '</p>' +
+        '</div>'
+    );
+};
+
+/**
+ * Show content spinner
+ */
+var SPINNER = () => {
+    return '<div style="text-align: center;padding: 50px;">' +
+        '<i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>' +
+        '</div>';
+};
+
+/**
+ * Global mapping of workflow status values to CSS elements, suffixs, icons, and
+ * printable names.
+ */
+var STATUS_2_CSS = (status) => {
+    switch (status) {
+        case STATE_RUNNING:
+            return {
+                'color' : 'blue',
+                'icon_small' : 'fa fa-circle-o-notch fa-spin',
+                'icon_large' : 'fa fa-circle-o-notch fa-3x',
+                'name' : 'Running',
+                'suffix' : 'running'
+            };
+        case STATE_IDLE:
+            return {
+                'color' : 'orange',
+                'icon_small' : 'fa fa-hourglass-half',
+                'icon_large' : 'fa fa-hourglass-half fa-3x',
+                'name' : 'Idle',
+                'suffix' : 'waiting'
+            }
+        case STATE_ERROR:
+            return {
+                'color' : 'red',
+                'icon_small' : 'fa fa-bolt',
+                'icon_large' : 'fa fa-bolt fa-3x',
+                'name' : 'Failed',
+                'suffix' : 'failed'
+            };
+        case STATE_FINISHED:
+            return {
+                'color' : 'teal',
+                'icon_small' : 'fa fa-power-off',
+                'icon_large' : 'fa fa-power-off fa-3x',
+                'name' : 'Finished',
+                'suffix' : 'finished'
+            };
+    }
+}
+
+
+/**
  * ADAGE UI - Contains several UI components.
  */
-var ADAGEUI = function() {
+var ADAGEUI = function(urlWorkflowAPI, urlTemplateAPI, elementId) {
     /**
-     * The currently displayed workflow. Initially set to null.
-     *
-     * @type: Workflow
+     * Create the relevant DOM elements for the GUI components
      */
-    this.current_workflow = null;
+    $('#' + elementId).html(
+       '<div class="row" id="' + $EL_HEADLINE + '"></div>' +
+       '<div class="row" id="' + $EL_OVERVIEW + '"></div>' +
+       '<div class="row" id="' + $EL_CONTENT + '"></div>'
+    );
     /**
-     * List of workflows managed by the ADAGE Server API. Initially this list
-     * is empty. It will be populated during reload().
-     *
-     * @type: WorkflowListing
+     * Base Urls for workflow and template API's
      */
-    this.workflows = new WorkflowListing([]);
+    const self = this;
+    this.links = {};
+    this.urlWorkflowAPI = CORSify(urlWorkflowAPI);
+    this.urlTemplateAPI = CORSify(urlTemplateAPI);
+    this.headline = new HeadlinePanel($EL_HEADLINE);
+    this.overview = new OverviewPanel($EL_OVERVIEW, this);
+    this.listings = new ListingPanel(
+        $EL_CONTENT,
+        function(workflowId, workflowName) {
+            self.showWorkflow(workflowId, workflowName);
+        },
+        function() {self.showRECAST();}
+    );
+    this.workflow = new WorkflowPanel(
+        $EL_CONTENT,
+        function(url) {self.deleteWorkflow(url)},
+        function() {self.showRECAST();}
+    );
     /**
-     * User Interface components.
+     * Load the service description
      */
-    this.recast_form = new RECASTForm(this);
-    this.headline = new HeadlinePanel(this);
-    this.sidebar = new WorkflowSidebarListing(this);
-    this.overview = new OverviewPanel(this);
-    this.workflow_panel = new WorkflowPanel(this);
-    /**
-     * Mapping of workflow state codes to CSS elements, suffixs, icins, and
-     * printable names.
-     */
-    this.state_2_css = {};
-    this.state_2_css[STATE_RUNNING] = {'color' : 'blue', 'icon_small' : 'fa fa-circle-o-notch fa-spin', 'icon_large' : 'fa fa-circle-o-notch fa-3x', 'name' : 'Running', 'suffix' : 'running'};
-    this.state_2_css[STATE_WAITING] = {'color' : 'orange', 'icon_small' : 'fa fa-hourglass-half', 'icon_large' : 'fa fa-hourglass-half fa-3x', 'name' : 'Idle', 'suffix' : 'waiting'};
-    this.state_2_css[STATE_FAILED] = {'color' : 'red', 'icon_small' : 'fa fa-bolt', 'icon_large' : 'fa fa-bolt fa-3x', 'name' : 'Failed', 'suffix' : 'failed'};
-    this.state_2_css[STATE_FINISHED] = {'color' : 'teal', 'icon_small' : 'fa fa-power-off', 'icon_large' : 'fa fa-power-off fa-3x', 'name' : 'Finished', 'suffix' : 'finished'};
-
-
+     $('#' + $EL_CONTENT).html(SPINNER());
+     $.ajax({
+         url: self.urlWorkflowAPI,
+         type: 'GET',
+         contentType: 'application/json',
+         success: function(data) {
+             self.headline.setSource(data.name);
+             self.overview.init(getReference('workflows.stats', data.links));
+             self.listings.setLinks(data.links);
+             self.showRECAST();
+             self.links['submit'] = getReference('workflows.submit', data.links);
+         },
+         error: ERROR
+     });
 };
 
 ADAGEUI.prototype = {
     constructor: ADAGEUI,
     /**
-     * Apply a set of rules for the workflow with the given identifier.
-     *
-     * workflow_id: string
-     * rules: [{id:..., parameter: {key:...,value:...}}]
+     * Create an new workflow. If the request is successful the created workflow
+     * will be displayed.
      */
-    applyRulesForWorkflow : function(workflow_id, rules) {
-        var ui = this;
+    createWorkflow : function(templateUrl, name, parameter) {
+        $('#' + $EL_CONTENT).html(SPINNER());
+        const self = this;
+        console.log(self.links['submit']);
         $.ajax({
-            url: API_BASE_URL + '/workflows/' + workflow_id + '/apply',
+            url: self.links['submit'],
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({'rules' : rules}),
+            data: JSON.stringify({
+                'template' : templateUrl,
+                'name' : name,
+                'parameters' : parameter
+            }),
             success: function(data) {
-                ui.reload();
+                self.overview.reload();
+                self.showWorkflow(getSelfReference(data.links), data.name);
             },
-            error: function() {
-                alert('There was an error while submitting your request.');
-            }
+            error: ERROR
         });
     },
     /**
-     * Delete the current workflow.
+     * Delete workflow with given Url
      */
-    deleteCurrentWorkflow : function() {
-        // Return if current workflow is not Set
-        if (!this.current_workflow) {
-            return;
-        }
-        // Make sure user really wants to delete the workflow
-        if (confirm("Do you really want to permanently delete the current workflow ?")) {
-            var ui = this;
-            $.ajax({
-                url: this.current_workflow.url,
-                type: 'DELETE',
-                contentType: 'application/json',
-                success: function(data) {
-                    ui.reload();
-                },
-                error: function() {
-                    alert('There was an error while trying to delete the current workflow.');
-                }
-            });
-        }
-    },
-    /**
-      * Reload list of workflows managed through UI and refresh UI components.
-      */
-    reload : function() {
-        var ui = this;
-        // Load workflow listing
-        $.get(API_BASE_URL + '/workflows', function(data, status) {
-            if (status === 'success') {
-                ui.workflows = new WorkflowListing(data.workflows);
-                // Refresh summaries
-                ui.sidebar.refresh();
-                ui.overview.refresh();
-                // If current workflow was set and the workflow still exists
-                // redisplay it in the workflow overview panel. Otherwise,
-                // set the workflow to null.
-                if (ui.current_workflow) {
-                    var workflow = ui.workflows.lookup[ui.current_workflow.id];
-                    if (workflow) {
-                        // Need to load the workflow (to get updates) and
-                        // re-display it.
-                        ui.showWorkflow(workflow.id);
-                    } else {
-                        // Current workflow no longer exists.
-                        ui.setWorkflow(null);
-                    }
-                }
-            }
-        });
-    },
-    /**
-     * Display the workflow panel for a given workflow. If the workflow is
-     * null the workflow panel will be hidden and the summary panel and RECAST
-     * form will be shown.
-     *
-     * workflow: Workflow
-     */
-    setWorkflow : function(workflow) {
-        if (workflow) {
-            // Highlight the workflow in the sidebar listing
-            this.sidebar.setCurrent(workflow);
-            // Set current workflow
-            this.current_workflow = workflow;
-            // Create the workflow panel
-            this.workflow_panel.showWorkflow(workflow);
-            // Show the workflow panel and hide the summary panel and RECAST
-            // form
-            // Show workflow panel
-            $('#panel-overview').hide();
-            $('#panel-recast-form').hide();
-            $('#panel-workflow').fadeIn(300);
-        } else {
-            // Clear highlighted workflow in sidebar listing.
-            this.sidebar.setCurrent(null);
-            // Clear current workflow
-            this.current_workflow = null;
-            // Hide workflow panel and show summary panel and RECAST form.
-            $('#panel-workflow').hide();
-            $('#panel-overview').fadeIn(300);
-            $('#panel-recast-form').fadeIn(300);
-        }
-        this.headline.refresh();
-    },
-    /**
-     * Load and display workflow with given identifier.
-     *
-     * workflow_id: string
-     */
-    showWorkflow : function(workflow_id) {
-        var ui = this;
-        var workflow = this.workflows.lookup[workflow_id];
+    deleteWorkflow : function(url) {
+        const self = this;
         $.ajax({
-            url: workflow.url,
+            url: url,
+            type: 'DELETE',
             contentType: 'application/json',
             success: function(data) {
-                ui.setWorkflow(new Workflow(data));
+                self.overview.reload();
+                self.showRECAST();
             },
             error: function() {
-                alert('There has been an error while retieving workflow information.')
-                ui.setWorkflow(null);
+                alert('There was an error while trying to delete the current workflow.');
             }
         });
     },
     /**
-     * Apply a set of rules for the workflow with the given identifier.
-     *
-     * workflow_id: string
-     * rules: [{id:..., parameter: {key:...,value:...}}]
+     * Show listing of all workflows that are in a given state.
      */
-    submitNodesForWorkflow : function(workflow_id, nodes) {
-        var ui = this;
-        $.ajax({
-            url: API_BASE_URL + '/workflows/' + workflow_id + '/submit',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({'nodes' : nodes}),
-            success: function(data) {
-                ui.reload();
-            },
-            error: function() {
-                alert('There was an error while submitting your request.');
-            }
-        });
+    listWorkflows : function(state) {
+        $('#' + $EL_CONTENT).html(SPINNER());
+        const css = STATUS_2_CSS(state);
+        this.headline.setPath(css.name);
+        this.listings.showListing(state);
     },
+    showRECAST : function() {
+        $('#' + $EL_CONTENT).html(SPINNER());
+        this.headline.setPath();
+        const self = this;
+        RECASTForm(
+            $EL_CONTENT,
+            this.urlTemplateAPI,
+            (templateUrl, name, parameter) => {
+                self.createWorkflow(templateUrl, name, parameter)
+            }
+        );
+    },
+    showWorkflow : function(workflowUrl, workflowName) {
+        $('#' + $EL_CONTENT).html(SPINNER());
+        this.headline.setPath(workflowName);
+        this.workflow.showWorkflow(workflowUrl);
+    }
 };
-
-// Create global ADAGE UI instance. NOTE: Renaming the variable will currently
-// break the hard-coded onClick handlers.
-var adage_ui = new ADAGEUI();
-
-// Call ui reload() when document is ready.
-$(document).ready(function(){
-    // Create RECAST form and load workflow templates
-    adage_ui.recast_form.createDOM('panel-recast-form');
-    adage_ui.recast_form.reload();
-    // Create UI headline
-    adage_ui.headline.createDOM('panel-headline');
-    // Create the overview panel
-    adage_ui.overview.createDOM('panel-overview');
-    // Create workflow panel and make sure it is hidden.
-    adage_ui.workflow_panel.createDOM('panel-workflow');
-    $('#panel-workflow').hide();
-    // Create sidebar listing
-    adage_ui.sidebar.createDOM('sidebar-collapse');
-    // Load workflows
-    adage_ui.reload();
-});

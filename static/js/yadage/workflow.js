@@ -2,9 +2,11 @@
  * Workkflow state codes
  */
 var STATE_RUNNING = 'RUNNING';
-var STATE_WAITING = 'WAITING';
-var STATE_FAILED = 'FAILED';
+var STATE_IDLE = 'IDLE';
+var STATE_ERROR = 'ERROR';
 var STATE_FINISHED = 'SUCCESS';
+
+var WORKFLOW_STATES = [STATE_RUNNING, STATE_IDLE, STATE_ERROR, STATE_FINISHED];
 
 
 /**
@@ -30,7 +32,7 @@ var WorkflowDescriptor = function(descriptor_obj) {
      *
      * @type: string
      */
-    this.state = descriptor_obj.state;
+    this.status = descriptor_obj.status;
     /**
      * Workflow URL. Extracted from the list of references.
      *
@@ -70,7 +72,11 @@ var Workflow = function(workflow_obj) {
      *
      * @type: string
      */
-    this.state = workflow_obj.state;
+    this.status = workflow_obj.status;
+    /**
+     * HATEOAS references
+     */
+    this.links = workflow_obj.links;
     /**
      * Workflow URL. Extracted from the list of references.
      *
@@ -114,10 +120,9 @@ var WorkflowListing = function(wf_list_obj) {
      *
      * @type: {[WorkflowDescriptor]}
      */
-    var states = [STATE_RUNNING, STATE_WAITING, STATE_FAILED, STATE_FINISHED];
     this.categories = {};
-    for (var i_state = 0; i_state < states.length; i_state++) {
-        this.categories[states[i_state]] = [];
+    for (var i_state = 0; i_state < WORKFLOW_STATES.length; i_state++) {
+        this.categories[WORKFLOW_STATES[i_state]] = [];
     }
     /**
      * Dictionary containing workflow descriptors indexed by their identifier.
@@ -131,13 +136,13 @@ var WorkflowListing = function(wf_list_obj) {
      * @type: [WorkflowDescriptor]
      */
     for (var i_wf = 0; i_wf < wf_list_obj.length; i_wf++) {
-        var wf = new WorkflowDescriptor(wf_list_obj[i_wf]);
-        this.categories[wf.state].push(wf);
+        const wf = new WorkflowDescriptor(wf_list_obj[i_wf]);
+        this.categories[wf.status].push(wf);
         this.lookup[wf.id] = wf;
     }
     // Sort elements in category lists by id
-    for (var i_state = 0; i_state < states.length; i_state++) {
-        this.categories[states[i_state]].sort(function(wf1, wf2) {
+    for (var i_state = 0; i_state < WORKFLOW_STATES.length; i_state++) {
+        this.categories[WORKFLOW_STATES[i_state]].sort(function(wf1, wf2) {
             return wf1.id.localeCompare(wf2.id);
         });
     }

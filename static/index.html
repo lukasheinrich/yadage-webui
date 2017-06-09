@@ -10,6 +10,7 @@
 <link href="css/bootstrap.css" rel="stylesheet">
 <link href="css/styles.css" rel="stylesheet">
 <link href="css/adage.css" rel="stylesheet">
+<link href="css/dataTables.bootstrap.min.css" rel="stylesheet">
 
 <!--[if lt IE 9]>
 <script src="js/html5shiv.js"></script>
@@ -28,19 +29,8 @@
 <script src="js/common/jquery.js"></script>
 <script src="js/common/bootstrap.min.js"></script>
 <script src="js/common/filesize.min.js"></script>
-
-<script src="js/yadage/app-config.js"></script>
-<script src="js/yadage/hateoas.js"></script>
-<script src="js/yadage/dag.js"></script>
-<script src="js/yadage/workflow.js"></script>
-<script src="js/yadage/ui/graph.js"></script>
-<script src="js/yadage/ui/file-browser.js"></script>
-<script src="js/yadage/ui/headline.js"></script>
-<script src="js/yadage/ui/overview.js"></script>
-<script src="js/yadage/ui/recast.js"></script>
-<script src="js/yadage/ui/sidebar.js"></script>
-<script src="js/yadage/ui/workflow.js"></script>
-<script src="js/yadage/ui/ui.js"></script>
+<script src="js/common/jquery.dataTables.min.js"></script>
+<script src="js/common/dataTables.bootstrap.min.js"></script>
 
 </head>
 
@@ -56,12 +46,12 @@
 				</button>
 				<a class="navbar-brand" href="#"><span>YADAGE</span>Admin</a>
 				<ul class="nav navbar-nav navbar-right">
-					<li><a href="./">Home</a></li>
+					<li><a href="./index.html">Home</a></li>
 					<li><a href="#">About</a></li>
 					<li class="dropdown">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Documentation <span class="caret"></span></a>
 		                <ul class="dropdown-menu">
-		                  <li><a href="/yadage/api/v1/doc/index.html">ADAGE Server API</a></li>
+		                  <li><a href="/yadage-engine/api/v1/doc/index.html">ADAGE Server API</a></li>
 		                  <li><a href="/workflow-repository/api/v1/doc/index.html">Template Server API</a></li>
 		                </ul>
 					</li>
@@ -72,19 +62,33 @@
 	</nav>
 
 	<!-- Workflow Listing Sidebar-->
-	<div id="sidebar-collapse" class="col-sm-3 col-lg-2 sidebar"></div>
+	<!--div id="sidebar-collapse" class="col-sm-3 col-lg-2 sidebar"></div-->
 
-	<div class="col-sm-9 col-sm-offset-3 col-lg-10 col-lg-offset-2 main">
-		<!-- ADAGE UI - Headline -->
-		<div class="row" id="panel-headline"></div>
-		<!-- Workflow Overview Section -->
-		<div class="row" id="panel-overview"></div>
-		<!-- Display RECAST form -->
-		<div class="row" id="panel-recast-form"></div>
-		<!-- Display Workflow Section -->
-		<div class="row" id="panel-workflow"></div>
-	</div>	<!--/.main-->
+	<div class="col-sm-12 col-lg-12 main" id="main-content"></div>
 
+    <script src="js/yadage/hateoas.js"></script>
+    <script src="js/yadage/dag.js"></script>
+    <script src="js/yadage/workflow.js"></script>
+    <script src="js/yadage/ui/graph.js"></script>
+    <script src="js/yadage/ui/file-browser.js"></script>
+    <script src="js/yadage/ui/panel.js"></script>
+    <script src="js/yadage/ui/headline.js"></script>
+    <script src="js/yadage/ui/overview.js"></script>
+    <script src="js/yadage/ui/listing.js"></script>
+    <script src="js/yadage/ui/recast.js"></script>
+    <script src="js/yadage/ui/workflow.js"></script>
+    <script src="js/yadage/ui/ui.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create global ADAGE UI instance
+            var adage_ui = new ADAGEUI(
+                'http://localhost:25011/yadage-engine/api/v1',
+                'http://localhost:25012/workflow-repository/api/v1',
+                'main-content'
+            );
+        }, false);
+    </script>
 </body>
 
 </html>
