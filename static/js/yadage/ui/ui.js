@@ -129,8 +129,8 @@ var ADAGEUI = function(urlWorkflowAPI, urlTemplateAPI, elementId) {
     this.workflow = new WorkflowPanel(
         $EL_CONTENT,
         function(url) {self.deleteWorkflow(url)},
-        function(url, name, rules) {self.applyRules(url, name, rules)},
-        function(url, name, nodes) {self.submitNodes(url, name, nodes)},
+        function(links, name, rules) {self.applyRules(links, name, rules)},
+        function(links, name, nodes) {self.submitNodes(links, name, nodes)},
         function(url, name) {self.showWorkflow(url, name)},
         function() {self.showRECAST();}
     );
@@ -159,15 +159,15 @@ ADAGEUI.prototype = {
      * Apply a given list of rules (identifier) to the workflow with the given
      * Url.
      */
-    applyRules : function(url, name, rules) {
+    applyRules : function(links, name, rules) {
         const self = this;
         $.ajax({
-            url: url,
+            url: getReference('applyRules', links),
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({'rules' : rules}),
             success: function(data) {
-                self.showWorkflow(url, name);
+                self.showWorkflow(getSelfReference(links), name);
             },
             error: ERROR
         });
@@ -244,16 +244,16 @@ ADAGEUI.prototype = {
      * Apply a given list of rules (identifier) to the workflow with the given
      * Url.
      */
-    submitNodes : function(url, name, nodes) {
+    submitNodes : function(links, name, nodes) {
         const self = this;
         $.ajax({
-            url: url,
+            url: getReference('submitNodes', links),
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({'nodes' : nodes}),
             success: function(data) {
                 self.overview.reload();
-                self.showWorkflow(url, name);
+                self.showWorkflow(getSelfReference(links), name);
             },
             error: ERROR
         });

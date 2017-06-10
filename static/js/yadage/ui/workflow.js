@@ -123,7 +123,7 @@ WorkflowPanel.prototype = {
                 FILE_BROWSER($EF_WFFILEBROWSER, getReference('files', workflow.links));
                 // Assign onClick handler to apply and submit buttons
                 var obj = this;
-                (function(workflow, name, url) {
+                (function(workflow, name, links) {
                     $('#' + $EL_WF_BTN_APPLYRULES).click(function(event) {
                         event.preventDefault();
                         // Create list of selected rules to be run
@@ -138,11 +138,11 @@ WorkflowPanel.prototype = {
                             $('#submitRulesMessage').html('<div class="alert alert-danger" role="alert">No rules selected to extend the workflow.</div>');
                         } else {
                             $('#submitRulesMessage').html('');
-                            applyRulesCallback(url, name, rules);
+                            applyRulesCallback(links, name, rules);
                         }
                     });
-                })(workflow, workflow.name, getReference('applyRules', workflow.links));
-                (function(workflow, name, url) {
+                })(workflow, workflow.name, workflow.links);
+                (function(workflow, name, links) {
                     $('#' + $EL_WF_BTN_SUBMITTASKS).click(function(event) {
                         event.preventDefault();
                         // Create list of selected nodes to be submitted for execution
@@ -157,10 +157,10 @@ WorkflowPanel.prototype = {
                             $('#submitNodesMessage').html('<div class="alert alert-danger" role="alert">No tasks selected for execution.</div>');
                         } else {
                             $('#submitNodesMessage').html('');
-                            submitTasksCallback(url, name, nodes);
+                            submitTasksCallback(links, name, nodes);
                         }
                     });
-                })(workflow, workflow.name, getReference('submitNodes', workflow.links));
+                })(workflow, workflow.name, workflow.links);
                 // Display the workflow graph if not empty
                 if ((workflow.dag.nodes.length > 0) || (workflow.applicable_rules.length > 0)) {
                     new WorkflowGraph(workflow).show($EL_WFGRAPH_CONTAINER);
