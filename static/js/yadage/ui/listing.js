@@ -44,7 +44,9 @@ ListingPanel.prototype = {
                 let html = '';
                 const workflows = data.workflows;
                 if (workflows.length > 0) {
-                    html += '<table class="table table-hover"><tbody>';
+                    html += '<table class="table table-hover">';
+                    html += '<thead><tr><th>Name</th><th>Created At</th><th>Status</th></tr></thead>';
+                    html += '<tbody>';
                     for (let i = 0; i < workflows.length; i++) {
                         const workflow = workflows[i];
                         let rowStyle = '';
@@ -52,7 +54,8 @@ ListingPanel.prototype = {
                             rowStyle = ' even-row';
                         }
                         let row = '<td><a href="#" id="wf-row-' + workflow.id + '">' + workflow.name + '</a></td>';
-                        row += '<td>' + workflow.id + '</td>';
+                        row += '<td>' + UTC_2_LOCAL(workflow.createdAt) + '</td>';
+                        row += '<td>' + css.name + '</td>';
                         html += '<tr>' + row + '</tr>';
                     }
                     html    += '</tbody></table>';

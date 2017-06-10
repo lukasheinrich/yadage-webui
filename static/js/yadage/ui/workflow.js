@@ -2,7 +2,10 @@
  * ADAGE UI - Workflow Panel
  */
 
+var $EL_WF_BTN_APPLYRULES = 'wfpnl-btn-applyrukes';
 var $EL_WF_BTN_DELETE = 'wfpnl-btn-delete';
+var $EL_WF_BTN_REFRESH = 'wfpnl-btn-refresh';
+var $EL_WF_BTN_SUBMITTASKS = 'wfpnl-btn-submittasks';
 var $EL_WFGRAPH_CONTAINER = 'workflow-graph-container';
 var $EF_WFFILEBROWSER = 'file-browser-container';
 
@@ -10,7 +13,14 @@ var $EF_WFFILEBROWSER = 'file-browser-container';
  * Workflow panel to display information about a workflow. Shows the current
  * workflow graph and all applicable rules.
  */
-var WorkflowPanel = function(elementId, deleteWorkflowCallback, onCloseCallback) {
+var WorkflowPanel = function(
+    elementId,
+    deleteWorkflowCallback,
+    applyRulesCallback,
+    submitTasksCallback,
+    refreshCallback,
+    onCloseCallback
+) {
      /**
       * Identifier of the element containing the overview panel.
       */
@@ -19,6 +29,9 @@ var WorkflowPanel = function(elementId, deleteWorkflowCallback, onCloseCallback)
       * Callback handler for various events.
       */
      this.deleteWorkflowCallback = deleteWorkflowCallback;
+     this.applyRulesCallback = applyRulesCallback;
+     this.submitTasksCallback = submitTasksCallback;
+     this.refreshCallback = refreshCallback;
      this.onCloseCallback = onCloseCallback;
 };
 
@@ -28,6 +41,9 @@ WorkflowPanel.prototype = {
         $('#' + this.elementId).html(SPINNER());
         const elId = this.elementId;
         const onCloseCallback = this.onCloseCallback;
+        const applyRulesCallback = this.applyRulesCallback;
+        const submitTasksCallback = this.submitTasksCallback;
+        const refreshCallback = this.refreshCallback;
         const deleteWorkflowCallback = this.deleteWorkflowCallback;
         $.ajax({
             url: workflowUrl,
@@ -39,8 +55,10 @@ WorkflowPanel.prototype = {
                 // Display Workflow Graph
                 let wf_graph_html = '<h3 class="panel-section">Workflow&nbsp;&nbsp;';
                 wf_graph_html += '<button class="btn btn-white" id="' + $EL_WF_BTN_DELETE + '" title="Delete Workflow"><i class="fa fa-trash fa-1" aria-hidden="true"></i></button>';
+                wf_graph_html += '<button class="btn btn-white" id="' + $EL_WF_BTN_REFRESH + '" title="Refresh"><i class="fa fa-refresh fa-1" aria-hidden="true"></i></button>';
                 wf_graph_html += '</h3>';
-                wf_graph_html += '<div class="row">';
+                wf_graph_html += '<p class="attribute">Created at <span class="datetime">' + UTC_2_LOCAL(data.createdAt) + '</span></p>';
+                wf_graph_html += '<div class="row workflow-state-area">';
                 wf_graph_html += '<div class="col-md-8">';
                 if ((workflow.dag.nodes.length > 0) || (workflow.applicable_rules.length > 0)) {
                     //wf_graph_html += '<div class="container-fluid workflow"><svg width=960 height=600><g/></svg></div>';
@@ -62,7 +80,7 @@ WorkflowPanel.prototype = {
                         wf_rules_html += '<div class="rule-checkbox"><input type="checkbox" class="chkApplicableRule" id="chk_rule_' + rule_id + '" value="' + rule_id + '"><label for="chk_rule_' + rule_id + '"><span></span>' + rule.name + '</label></div>';
                     });
                     wf_rules_html += '<div id="submitRulesMessage"></div>';
-                    wf_rules_html += '<button type="button" class="btn btn-default" id="btn-submit-rules-form">Apply</button>';
+                    wf_rules_html += '<button type="button" class="btn btn-default" id="' + $EL_WF_BTN_APPLYRULES + '">Apply</button>';
                     html += '<div>' + wf_rules_html + '</div>';
                 }
                 // List submittable nodes
@@ -72,7 +90,7 @@ WorkflowPanel.prototype = {
                         wf_nodes_html += '<div class="rule-checkbox"><input type="checkbox" class="chkSubmittableNode" id="chk_node_' + node.id + '" value="' + node.id + '"><label for="chk_node_' + node.id + '"><span></span>' + node.name + '</label></div>';
                     });
                     wf_nodes_html += '<div id="submitNodesMessage"></div>';
-                    wf_nodes_html += '<button type="button" class="btn btn-default" id="btn-submit-nodes-form">Run</button>';
+                    wf_nodes_html += '<button type="button" class="btn btn-default" id="' + $EL_WF_BTN_SUBMITTASKS + '">Run</button>';
                     html += '<div>' + wf_nodes_html + '</div>';
                 }
                 html += '</div>';
@@ -94,20 +112,60 @@ WorkflowPanel.prototype = {
                             deleteWorkflowCallback(url);
                         }
                     }) ;
+                })(workflow.name, getReference('delete', workflow.links));
+                // Refresh button - On click handler.
+                (function(name, url) {
+                    $('#' + $EL_WF_BTN_REFRESH).click(function(event) {
+                        event.preventDefault();
+                        refreshCallback(url, name);
+                    }) ;
                 })(workflow.name, getSelfReference(workflow.links));
                 FILE_BROWSER($EF_WFFILEBROWSER, getReference('files', workflow.links));
                 // Assign onClick handler to apply and submit buttons
                 var obj = this;
-                $('button#btn-submit-rules-form').click(function() {
-                    obj.submitRulesForm();
-                });
-                $('button#btn-submit-nodes-form').click(function() {
-                    obj.submitNodesForm();
-                });
+                (function(workflow, name, url) {
+                    $('#' + $EL_WF_BTN_APPLYRULES).click(function(event) {
+                        event.preventDefault();
+                        // Create list of selected rules to be run
+                        const rules = []
+                        $('.chkApplicableRule').each(function() {
+                            if ($(this).is(':checked')) {
+                                rules.push($(this).val());
+                            }
+                        })
+                        // Return with message if no rules were selected
+                        if (rules.length === 0) {
+                            $('#submitRulesMessage').html('<div class="alert alert-danger" role="alert">No rules selected to extend the workflow.</div>');
+                        } else {
+                            $('#submitRulesMessage').html('');
+                            applyRulesCallback(url, name, rules);
+                        }
+                    });
+                })(workflow, workflow.name, getReference('applyRules', workflow.links));
+                (function(workflow, name, url) {
+                    $('#' + $EL_WF_BTN_SUBMITTASKS).click(function(event) {
+                        event.preventDefault();
+                        // Create list of selected nodes to be submitted for execution
+                        const nodes = []
+                        $('.chkSubmittableNode').each(function() {
+                            if ($(this).is(':checked')) {
+                                nodes.push($(this).val());
+                            }
+                        })
+                        // Return with message if no rules were selected
+                        if (nodes.length === 0) {
+                            $('#submitNodesMessage').html('<div class="alert alert-danger" role="alert">No tasks selected for execution.</div>');
+                        } else {
+                            $('#submitNodesMessage').html('');
+                            submitTasksCallback(url, name, nodes);
+                        }
+                    });
+                })(workflow, workflow.name, getReference('submitNodes', workflow.links));
                 // Display the workflow graph if not empty
                 if ((workflow.dag.nodes.length > 0) || (workflow.applicable_rules.length > 0)) {
                     new WorkflowGraph(workflow).show($EL_WFGRAPH_CONTAINER);
                 }
+                // Set onclick handler to close the panel
                 (function(elementId) {
                     $('#' + elementId).click(function(event) {
                         event.preventDefault();

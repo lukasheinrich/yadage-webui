@@ -46,6 +46,15 @@ var SPINNER = () => {
         '<i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>' +
         '</div>';
 };
+/**
+ * Convert UTC timestamp provided by API into local time.
+ */
+var UTC_2_LOCAL = (timestamp) => {
+     //var offset = new Date().getTimezoneOffset();
+     const utc_date = new Date(timestamp).toLocaleString();
+     //utc_date.setMinutes(utc_date.getMinutes() - offset);
+     return new Date(utc_date + ' UTC').toLocaleString();
+};
 
 /**
  * Global mapping of workflow status values to CSS elements, suffixs, icons, and
@@ -120,6 +129,9 @@ var ADAGEUI = function(urlWorkflowAPI, urlTemplateAPI, elementId) {
     this.workflow = new WorkflowPanel(
         $EL_CONTENT,
         function(url) {self.deleteWorkflow(url)},
+        function(url, name, rules) {self.applyRules(url, name, rules)},
+        function(url, name, nodes) {self.submitNodes(url, name, nodes)},
+        function(url, name) {self.showWorkflow(url, name)},
         function() {self.showRECAST();}
     );
     /**
@@ -143,6 +155,23 @@ var ADAGEUI = function(urlWorkflowAPI, urlTemplateAPI, elementId) {
 
 ADAGEUI.prototype = {
     constructor: ADAGEUI,
+    /**
+     * Apply a given list of rules (identifier) to the workflow with the given
+     * Url.
+     */
+    applyRules : function(url, name, rules) {
+        const self = this;
+        $.ajax({
+            url: url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({'rules' : rules}),
+            success: function(data) {
+                self.showWorkflow(url, name);
+            },
+            error: ERROR
+        });
+    },
     /**
      * Create an new workflow. If the request is successful the created workflow
      * will be displayed.
@@ -210,5 +239,23 @@ ADAGEUI.prototype = {
         $('#' + $EL_CONTENT).html(SPINNER());
         this.headline.setPath(workflowName);
         this.workflow.showWorkflow(workflowUrl);
+    },
+    /**
+     * Apply a given list of rules (identifier) to the workflow with the given
+     * Url.
+     */
+    submitNodes : function(url, name, nodes) {
+        const self = this;
+        $.ajax({
+            url: url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({'nodes' : nodes}),
+            success: function(data) {
+                self.overview.reload();
+                self.showWorkflow(url, name);
+            },
+            error: ERROR
+        });
     }
 };
