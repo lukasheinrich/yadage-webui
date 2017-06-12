@@ -10,8 +10,8 @@ with CORS issues.
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 
-from yadagetemplates.server import app as templates
-from yadageengine.server import app as engine
+from yadagetemplates.server import template_app as templates
+from yadageengine.server import engine_app as engine
 
 # ------------------------------------------------------------------------------
 # Initialize the Web app

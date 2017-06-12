@@ -1,3 +1,5 @@
+var REFRESH_INTERVAL = 5000;
+
 /**
  * Panel showing counts of the four workflow categories. Only method is refresh
  * to update the counters based on a given workflow listing.
@@ -66,7 +68,7 @@ OverviewPanel.prototype = {
         this.statsUrl = ref;
         this.refresh(ref);
         const self = this;
-        this.refreshIntervalId = window.setInterval(function(){ self.refresh(ref); }, 15000);
+        this.refreshIntervalId = window.setInterval(function(){ self.refresh(ref); }, REFRESH_INTERVAL);
     },
     /**
      * Refresh counters based on given workflow listing.
@@ -106,7 +108,7 @@ OverviewPanel.prototype = {
             function(){
                 self.refresh(self.statsUrl);
             },
-            15000
+            REFRESH_INTERVAL
         );
     }
 };
